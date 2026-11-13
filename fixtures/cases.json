@@ -1,0 +1,67 @@
+[
+  {
+    "name": "组合文本提交后再保存",
+    "routes": [],
+    "input": {
+      "location": "贝加尔湖",
+      "container": "瓶",
+      "quantity": "003"
+    },
+    "expected": {
+      "state": "saved",
+      "record": {
+        "location": "贝加尔湖",
+        "quantity": "3",
+        "total": 6
+      }
+    },
+    "required": [],
+    "kind": "browser",
+    "mode": "success",
+    "actions": [
+      "save"
+    ],
+    "productNumber": 14
+  },
+  {
+    "name": "旧计算晚到不可误接收",
+    "routes": [],
+    "input": {
+      "location": "贝加尔湖",
+      "container": "瓶",
+      "quantity": "004"
+    },
+    "expected": {
+      "state": "saved",
+      "record": {
+        "quantity": "4",
+        "total": 8
+      }
+    },
+    "required": [],
+    "kind": "browser",
+    "mode": "late",
+    "actions": [
+      "save"
+    ],
+    "productNumber": 14
+  },
+  {
+    "name": "非法数量保留拒绝原因",
+    "routes": [],
+    "input": {
+      "location": "贝加尔湖",
+      "container": "瓶",
+      "quantity": "-1"
+    },
+    "expected": {
+      "state": "rejected",
+      "reason": "数量必须为正整数"
+    },
+    "required": [],
+    "kind": "browser",
+    "mode": "invalid",
+    "actions": [],
+    "productNumber": 14
+  }
+]
