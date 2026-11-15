@@ -1,5 +1,19 @@
 import { readFile } from 'node:fs/promises';
 
+const LOCATION_CONTAINERS = {
+  贝加尔湖: [
+    { value: '瓶', label: '瓶', factor: 2 },
+    { value: '桶', label: '桶', factor: 5 },
+  ],
+  洞庭湖: [
+    { value: '瓶', label: '瓶', factor: 3 },
+    { value: '箱', label: '箱', factor: 4 },
+  ],
+  青海湖: [
+    { value: '桶', label: '桶', factor: 5 },
+  ],
+};
+
 export function createPortal(scenario, history) {
   const actions = [];
   const number = scenario.productNumber;
@@ -45,6 +59,11 @@ export function createPortal(scenario, history) {
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); response.end(html); return true;
       }
       if (address.pathname === '/portal/state') { writeJson(response, state); return true; }
+      if (address.pathname === '/portal/containers' && request.method === 'GET') {
+        const location = (address.searchParams.get('location') ?? '').trim();
+        writeJson(response, { location, containers: LOCATION_CONTAINERS[location] ?? [] });
+        return true;
+      }
       if (address.pathname !== '/portal/action') return false;
       if (request.method !== 'POST') { writeJson(response, { error: '只接受页面动作' }, 405); return true; }
       let input;
@@ -82,9 +101,29 @@ export function createPortal(scenario, history) {
         writeJson(response, { registration: 'reg-1', revision: 2, failed: mode === 'failed', staleFirst: mode === 'stale' }); return true;
       }
       if (number === 14 && action === 'save') {
+        if (!input.record || typeof input.record !== 'object') { writeJson(response, { error: '缺少记录内容' }, 422); return true; }
         if (input.composing || input.calculatedGeneration !== input.inputGeneration) { writeJson(response, { error: '输入尚未提交' }, 409); return true; }
-        if (!/^\d+$/.test(input.record.quantity) || Number(input.record.quantity) <= 0) { writeJson(response, { error: '数量必须为正整数' }, 422); return true; }
-        state.record = input.record;
+        const record = input.record;
+        if (!/^\d+$/.test(String(record.quantity ?? '')) || Number(record.quantity) <= 0) { writeJson(response, { error: '数量必须为正整数' }, 422); return true; }
+        const location = String(record.location ?? '').trim();
+        const containers = LOCATION_CONTAINERS[location] ?? [];
+        const container = containers.find(option => option.value === String(record.container ?? ''));
+        if (!containers.length) { writeJson(response, { error: '地点不在可用清单' }, 422); return true; }
+        if (!container) { writeJson(response, { error: '该地点不支持此容器' }, 422); return true; }
+        const quantity = String(Number(record.quantity));
+        const expectedTotal = Number(quantity) * container.factor;
+        if (mode === 'revert') {
+          // 服务端以自身规则回退刚写入的值，并把可核对的值返回页面，供页面回写控件。
+          const reverted = { location, container: container.value, quantity: '1', total: container.factor };
+          writeJson(response, { error: '服务端已回退为可用记录，请核对后重试', record: reverted }, 422);
+          return true;
+        }
+        if (Number(record.total) !== expectedTotal) {
+          // 服务端以自身联动规则为准，把不一致的总量改回可核对的值供页面回写。
+          writeJson(response, { error: '联动总量与容器不符', expectedTotal, record: { ...record, location, container: container.value, quantity, total: expectedTotal } }, 422);
+          return true;
+        }
+        state.record = { location, container: container.value, quantity, total: expectedTotal };
       }
       if (number === 15) {
         if (action === 'select') { state.point = input.point; state.revision = 2; state.generation += 1; }

@@ -63,5 +63,82 @@
     "mode": "invalid",
     "actions": [],
     "productNumber": 14
+  },
+  {
+    "name": "地点联动改变可用容器后继续录入",
+    "routes": [],
+    "input": {
+      "location": "洞庭湖",
+      "container": "箱",
+      "quantity": "002"
+    },
+    "expected": {
+      "state": "saved",
+      "record": {
+        "location": "洞庭湖",
+        "container": "箱",
+        "quantity": "2",
+        "total": 8
+      }
+    },
+    "required": [
+      "/portal/containers"
+    ],
+    "kind": "browser",
+    "mode": "success",
+    "actions": [
+      "save"
+    ],
+    "productNumber": 14,
+    "containerChange": "洞庭湖"
+  },
+  {
+    "name": "服务端回退后保留拒绝原因且不循环覆盖",
+    "routes": [],
+    "input": {
+      "location": "贝加尔湖",
+      "container": "瓶",
+      "quantity": "005"
+    },
+    "expected": {
+      "state": "rejected",
+      "reason": "服务端已回退为可用记录，请核对后重试"
+    },
+    "required": [],
+    "kind": "browser",
+    "mode": "revert",
+    "actions": [
+      "save"
+    ],
+    "productNumber": 14,
+    "limits": {
+      "/portal/action": 2
+    }
+  },
+  {
+    "name": "刷新中断后按草稿续录",
+    "routes": [],
+    "input": {
+      "location": "贝加尔湖",
+      "container": "桶",
+      "quantity": "006"
+    },
+    "expected": {
+      "state": "saved",
+      "record": {
+        "location": "贝加尔湖",
+        "container": "桶",
+        "quantity": "6",
+        "total": 30
+      }
+    },
+    "required": [],
+    "kind": "browser",
+    "mode": "success",
+    "actions": [
+      "save"
+    ],
+    "productNumber": 14,
+    "resume": "interrupted"
   }
 ]
